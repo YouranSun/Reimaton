@@ -1,30 +1,35 @@
 from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter import simpledialog
-from tkinter import messagebox
+from tkinter import ttk, filedialog, simpledialog, messagebox
 
 from typing import List
 from Document import Fapiao
 from Reimbursement import Schema, Record, Certificate
+
+import os
 
 class GUI:
     root: Tk = None
 
     paned_window: PanedWindow = None
 
+    schema_container: ttk.Frame = None
     schema_canvas: Canvas = None
     schema_scroll_bar: Scrollbar = None
     schema_scrollable_frame: ttk.Frame = None
     
     schema: Schema = Schema()
 
+    valid_container: ttk.Frame = None
     valid_canvas: Canvas = None
     valid_scroll_bar: Scrollbar = None
     valid_scrollable_frame: ttk.Frame = None
 
+    tools_container: ttk.Frame = None
+
     style: None
     current_row = 0
+
+    path_entry: Entry = None
 
     def _refresh_schema_window(self):
         for widget in self.schema_scrollable_frame.winfo_children():
@@ -40,12 +45,12 @@ class GUI:
         self.display()
 
     def _del_contestant(self, name: str):
-        self.schema.del_contestant(name)
+        if name: self.schema.del_contestant(name)
         self.display()
 
     def _upd_city(self):
         name = simpledialog.askstring("输入", "举办城市:")
-        self.schema.upd_city(name)
+        if name: self.schema.upd_city(name)
         self.display()
 
     def _add_trip(self, record: Record, home_city: str, dest_city: str, contestants: List[str]):        
@@ -142,6 +147,17 @@ class GUI:
         self.schema.validate()
         self.display()
 
+    def _generate(self):
+        try:
+            dir_path = self.path_entry.get()
+            if dir_path:
+                self.schema.generate(dir_path)
+            else:
+                raise FileNotFoundError('请选择目标文件夹')
+        except FileNotFoundError as e:
+            messagebox.showwarning("错误：", str(e))
+
+
     def _del_registration(self, record: Record):
         self.schema.del_registration(record)
         self.display()
@@ -217,7 +233,7 @@ class GUI:
         ttk.Label(self.schema_scrollable_frame, text='住宿').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
         for i, record in enumerate(self.schema.hostel):
-            ttk.Label(self.schema_scrollable_frame, text=str(i)).grid(column=0, row=self.current_row, sticky='w')
+            ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_hostel).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='hostel')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_hostel).grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
@@ -226,7 +242,7 @@ class GUI:
         ttk.Label(self.schema_scrollable_frame, text='报名费').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
         for i, record in enumerate(self.schema.registration):
-            ttk.Label(self.schema_scrollable_frame, text=str(i)).grid(column=0, row=self.current_row, sticky='w')
+            ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_registration).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='registration')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_registration).grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
@@ -241,15 +257,24 @@ class GUI:
         ttk.Label(self.valid_scrollable_frame, text='警告', foreground='orange').grid(column=0,row=current_row, sticky='w')
         current_row += 1
         for w in self.schema.warning:
-            print(current_row)
             ttk.Label(self.valid_scrollable_frame, text=w, foreground='orange').grid(column=0,row=current_row, sticky='w')
             current_row += 1
 
 
     def _display_validation_generation(self):
-        ttk.Button(self.schema_scrollable_frame, text='校验', command=self._validate).grid(column=0, row=self.current_row, sticky='w')
-        ttk.Button(self.schema_scrollable_frame, text='生成').grid(column=1, row=self.current_row, sticky='w')
-        self.current_row += 1
+        current_row = 0
+        ttk.Button(self.tools_container, text='校验', command=self._validate).grid(column=0, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text='生成', command=self._generate).grid(column=1, row=current_row, sticky='w')
+        self.path_entry = ttk.Entry(self.tools_container, width=50)
+        self.path_entry.grid(column=2,row=current_row, sticky='w')
+        def select_directory():
+            """打开目录选择对话框，并将选择的路径更新到 Entry 组件中"""
+            directory = filedialog.askdirectory()  # 弹出目录选择对话框
+            if directory:  # 如果用户选择了目录
+                self.path_entry.delete(0, END)  # 清空当前内容
+                self.path_entry.insert(0, directory)  # 插入新路径
+        ttk.Button(self.tools_container, text="选择目标文件夹", command=select_directory).grid(column=3, row=current_row, sticky='w')
+        ttk.Label(self.tools_container, text='上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), foreground='green').grid(column=4, row=current_row, sticky='w')
 
     def display(self):
         self.current_row = 0
@@ -315,6 +340,10 @@ class GUI:
         self.valid_canvas.pack(side="left", fill="both", expand=True)
         self.valid_scrollbar.pack(side="right", fill="y")
 
+    def _create_tools(self):
+        self.tools_container = ttk.Frame(self.paned_window)
+        self.paned_window.add(self.tools_container, weight=1)
+
     def run(self):
         self.root = Tk()
         self.root.title("Reimbursement Automaton")
@@ -327,6 +356,7 @@ class GUI:
         self.paned_window.configure(style="Vertical.TPanedwindow")  # 使用默认样式
         # self.style.theme_use("alt")
 
+        self._create_tools()
         self._create_scrollable()
         self._create_error_display()
 

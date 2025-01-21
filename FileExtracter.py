@@ -1,4 +1,5 @@
 import pdfplumber
+import os
 from pdfplumber.page import Page
 
 from typing import List
@@ -9,6 +10,10 @@ FLOAT_2P = r"(\d+\.\d\d)"
 class BaseFile:
     def __init__(self):
         pass
+    
+    @property
+    def extension(self):
+        return os.path.splitext(self.path)[1]
 
     def load_info(self):
         pass
@@ -40,7 +45,6 @@ class PDFFile(BaseFile):
             return
         # self.text = ''.join([char for char in self.text if char not in string.whitespace])
 
-import os
 from PIL import Image
 import pytesseract
 import cv2
@@ -52,8 +56,8 @@ import numpy as np
 # CHI_SIM_PATH = os.path.abspath('Tesseract-OCR\\tessdata\\chi_sim.traineddata')
 # ENG_PATH = os.path.abspath('Tesseract-OCR\\tessdata\\eng.traineddata')
 
-pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR\\tesseract.exe'
-tessdata_dir = os.path.abspath(r'Tesseract-OCR/tessdata').replace('\\', '/')
+# pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR\\tesseract.exe'
+tessdata_dir = os.path.abspath('').replace('\\', '/')
 
 class IMGFile(BaseFile):
     def __init__(self, path):
