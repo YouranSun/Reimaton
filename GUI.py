@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk, filedialog, simpledialog, messagebox
 
 from typing import List
-from Document import Fapiao
+from Document import Fapiao, PaperMaterial, Combined
 from Reimbursement import Schema, Record, Certificate
 
 import os
@@ -14,14 +14,14 @@ class GUI:
 
     schema_container: ttk.Frame = None
     schema_canvas: Canvas = None
-    schema_scroll_bar: Scrollbar = None
+    schema_scrollbar: Scrollbar = None
     schema_scrollable_frame: ttk.Frame = None
     
     schema: Schema = Schema()
 
     valid_container: ttk.Frame = None
     valid_canvas: Canvas = None
-    valid_scroll_bar: Scrollbar = None
+    valid_scrollbar: Scrollbar = None
     valid_scrollable_frame: ttk.Frame = None
 
     tools_container: ttk.Frame = None
@@ -112,11 +112,11 @@ class GUI:
                     ("合订单", "*.png")]  # 文件类型过滤
         )
         if file_path:
-            self.schema.add_traffic(Record(file_path))
+            self.schema.add_record(record_type='traffic', record=Record(file_path))
         self.display()
 
     def _del_traffic(self, record: Record):
-        self.schema.del_traffic(record)
+        self.schema.del_record(record_type='traffic', record=record)
         self.display()
 
     def _add_hostel(self):
@@ -126,11 +126,11 @@ class GUI:
                     ("发票", "*.pdf")]  # 文件类型过滤
         )
         if file_path:
-            self.schema.add_hostel(Record(file_path))
+            self.schema.add_record(record_type='hostel', record=Record(file_path))
         self.display()
 
     def _del_hostel(self, record: Record):
-        self.schema.del_hostel(record)
+        self.schema.del_record(record_type='hostel', record=record)
         self.display()
 
     def _add_registration(self):
@@ -140,7 +140,50 @@ class GUI:
                     ("发票", "*.pdf")]  # 文件类型过滤
         )
         if file_path:
-            self.schema.add_registration(Record(file_path))
+            self.schema.add_record(record_type='registration', record=Record(file_path))
+        self.display()
+
+    def _del_registration(self, record: Record):
+        self.schema.del_record(record_type='registration', record=record)
+        self.display()
+
+    def _add_paper(self):
+        popup = Toplevel(self.root)
+        popup.title('添加纸质报销材料')
+        popup.lift()
+
+        frm = ttk.Frame(popup, padding=10)
+        frm.grid()
+        label_amount = ttk.Label(popup, text='金额（元）').grid(column=0, row=0, sticky='w')
+        entry_amount = ttk.Entry(popup, width=10)
+        entry_amount.grid(column=1,row=0, sticky='w')
+        label_text = ttk.Label(popup, text='材料说明').grid(column=0, row=1, sticky='w')
+        entry_text = ttk.Entry(popup, width=50)
+        entry_text.grid(column=1,row=1, sticky='w')
+
+        def get_entry():
+            try:
+                try:
+                    entered_amount = float(entry_amount.get())
+                except ValueError as e:
+                    raise ValueError('请保证输入的金额是合法数字')
+                entered_text = entry_text.get()
+                
+                if entered_text is None or entered_text == '':
+                    raise ValueError('请输入说明')
+                record = Record.from_paper(PaperMaterial(total_amount=entered_amount, text=entered_text))
+                self.schema.add_record(record_type='paper', record=record)
+            except ValueError as e:
+                messagebox.showwarning("错误：", str(e))
+            popup.destroy()  # 关闭弹窗
+
+        button = ttk.Button(popup, text="确定", command=get_entry).grid(column=3, row=2, sticky='w')
+
+        self.root.wait_window(popup)
+        self.display()
+
+    def _del_paper(self, record: Record):
+        self.schema.del_record(record_type='paper', record=record)
         self.display()
 
     def _validate(self):
@@ -150,16 +193,12 @@ class GUI:
     def _generate(self):
         try:
             dir_path = self.path_entry.get()
-            if dir_path:
+            if dir_path and os.path.isdir(dir_path):
                 self.schema.generate(dir_path)
             else:
-                raise FileNotFoundError('请选择目标文件夹')
+                raise FileNotFoundError('请选择合法的目标文件夹')
         except FileNotFoundError as e:
             messagebox.showwarning("错误：", str(e))
-
-
-    def _del_registration(self, record: Record):
-        self.schema.del_registration(record)
         self.display()
 
     def _display_contestants(self):
@@ -195,7 +234,7 @@ class GUI:
             ttk.Label(self.schema_scrollable_frame, text = t + '：' + str(result[t])).grid(column=i+1, row=self.current_row, sticky='w')
         self.current_row += 1
 
-        if record_type == 'traffic':  
+        if record_type == 'traffic' or record_type == 'paper':  
             ttk.Label(self.schema_scrollable_frame, text='行程').grid(column=1, row=self.current_row, sticky='w')
             for i, t in enumerate(record.trips):
                 ttk.Label(self.schema_scrollable_frame, text=Record.trip_to_str(t)).grid(column=2, row=self.current_row, sticky='w')
@@ -216,14 +255,14 @@ class GUI:
                 
                 ttk.Button(self.schema_scrollable_frame, text='添加行程单', command=lambda r=record: self._add_cert(r)).grid(column=1, row=self.current_row, sticky='w')
                 self.current_row += 1
-            else:
+            elif type(record.fapiao) == Combined:
                 ttk.Label(self.schema_scrollable_frame, text='合订单无需行程单证明').grid(column=1, row=self.current_row, sticky='w')
                 self.current_row += 1
 
     def _display_traffic(self):
         ttk.Label(self.schema_scrollable_frame, text='交通').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
-        for i, record in enumerate(self.schema.traffic):
+        for i, record in enumerate(self.schema.records['traffic']):
             ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_traffic(r)).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='traffic')
         ttk.Button(self.schema_scrollable_frame, text='添加发票/合订单', command=self._add_traffic).grid(column=0, row=self.current_row, sticky='w')
@@ -232,7 +271,7 @@ class GUI:
     def _display_hostel(self):
         ttk.Label(self.schema_scrollable_frame, text='住宿').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
-        for i, record in enumerate(self.schema.hostel):
+        for i, record in enumerate(self.schema.records['hostel']):
             ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_hostel).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='hostel')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_hostel).grid(column=0, row=self.current_row, sticky='w')
@@ -241,10 +280,19 @@ class GUI:
     def _display_registration(self):
         ttk.Label(self.schema_scrollable_frame, text='报名费').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
-        for i, record in enumerate(self.schema.registration):
+        for i, record in enumerate(self.schema.records['registration']):
             ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_registration).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='registration')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_registration).grid(column=0, row=self.current_row, sticky='w')
+        self.current_row += 1
+
+    def _display_paper(self):
+        ttk.Label(self.schema_scrollable_frame, text='纸质材料').grid(column=0, row=self.current_row, sticky='w')
+        self.current_row += 1
+        for i, record in enumerate(self.schema.records['paper']):
+            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_paper(r)).grid(column=0, row=self.current_row, sticky='w')
+            self._display_record(record, record_type='paper')
+        ttk.Button(self.schema_scrollable_frame, text='添加纸质材料', command=self._add_paper).grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
 
     def _display_error_message(self):
@@ -286,63 +334,40 @@ class GUI:
         self._display_traffic()
         self._display_hostel()
         self._display_registration()
+        self._display_paper()
         self._display_error_message()
 
-    def _create_scrollable(self):
-        self.schema_container = ttk.Frame(self.paned_window)
-        self.paned_window.add(self.schema_container, weight=1)
-        # self.schema_container.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+    def _create_scrollable_frame(self, **params):
+        container = ttk.Frame(self.paned_window)
+        self.paned_window.add(container, **params)
+        # self.container.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
-        self.schema_canvas = Canvas(self.schema_container)
+        canvas = Canvas(container)
+        canvas.configure(height=80)
 
-        self.schema_scrollbar = Scrollbar(self.schema_container, orient="vertical", command=self.schema_canvas.yview)
-        self.schema_scrollable_frame = ttk.Frame(self.schema_canvas)
+        scrollbar = Scrollbar(container, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
 
         # 将滚动条与Canvas关联
-        self.schema_scrollable_frame.bind(
+        scrollable_frame.bind(
             "<Configure>",
-            lambda e: self.schema_canvas.configure(
-                scrollregion=self.schema_canvas.bbox("all")
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
             )
         )
 
         # 将Frame放入Canvas中
-        self.schema_canvas.create_window((0, 0), window=self.schema_scrollable_frame, anchor="nw")
-        self.schema_canvas.configure(yscrollcommand=self.schema_scrollbar.set)
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
 
         # 布局Canvas和滚动条
-        self.schema_canvas.pack(side="left", fill="both", expand=True)
-        self.schema_scrollbar.pack(side="right", fill="y")
-
-    def _create_error_display(self):
-        self.valid_container = ttk.Frame(self.paned_window)
-        self.paned_window.add(self.valid_container, weight=1)
-        # self.valid_container.pack(side="bottom", fill="both", expand=True, padx=10, pady=10)
-        
-        self.valid_canvas = Canvas(self.valid_container)
-
-        self.valid_scrollbar = Scrollbar(self.valid_container, orient="vertical", command=self.valid_canvas.yview)
-        self.valid_scrollable_frame = ttk.Frame(self.valid_canvas)
-
-        # 将滚动条与Canvas关联
-        self.valid_scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.valid_canvas.configure(
-                scrollregion=self.valid_canvas.bbox("all")
-            )
-        )
-
-        # 将Frame放入Canvas中
-        self.valid_canvas.create_window((0, 0), window=self.valid_scrollable_frame, anchor="nw")
-        self.valid_canvas.configure(yscrollcommand=self.valid_scrollbar.set)
-
-        # 布局Canvas和滚动条
-        self.valid_canvas.pack(side="left", fill="both", expand=True)
-        self.valid_scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        return container, canvas, scrollable_frame, scrollbar
 
     def _create_tools(self):
         self.tools_container = ttk.Frame(self.paned_window)
-        self.paned_window.add(self.tools_container, weight=1)
+        self.paned_window.add(self.tools_container, weight=0)
 
     def run(self):
         self.root = Tk()
@@ -356,9 +381,9 @@ class GUI:
         self.paned_window.configure(style="Vertical.TPanedwindow")  # 使用默认样式
         # self.style.theme_use("alt")
 
+        self.schema_container, self.schema_canvas, self.schema_scrollable_frame, self.schema_scrollbar = self._create_scrollable_frame(weight=1)
+        self.valid_container, self.valid_canvas, self.valid_scrollable_frame, self.valid_scrollbar = self._create_scrollable_frame(weight=0)
         self._create_tools()
-        self._create_scrollable()
-        self._create_error_display()
 
 
         # self.scrollable_frame.grid()

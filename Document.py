@@ -1,7 +1,14 @@
 import re
 from typing import List
 from FileExtracter import PDFFile, IMGFile, FLOAT_2P, INT
-from ErrorMessage import LOAD_ERROR, FAPIAO_NO_TITLE, FAPIAO_NO_SHUIHAO, FAPIAO_NO_SEAL
+from ErrorMessage import (
+    LOAD_ERROR,
+    FAPIAO_NO_TITLE,
+    FAPIAO_NO_SHUIHAO,
+    FAPIAO_NO_SEAL,
+    UNASSIGNED_PAPER_AMOUNT,
+    UNASSIGNED_PAPER_TEXT
+)
 
 GOUMAIFANG_MINGCHENG = "香港中文大学（深圳）"
 GOUMAIFANG_MINGCHENG_OCR = "香港中文大学(深圳)"
@@ -84,8 +91,11 @@ class Fapiao(PDFFile):
         print("total_amount = ", self.total_amount)
         print("extra_amount = ", self.extra_amount)
 
+ECONOMY_CLASS = '经济舱'
+
 class FlightInfo(IMGFile):
     docu_type = '舱位截图'
+    is_valid_seat: bool = False
     total_amount: int = 0
 
     def load_info(self):
@@ -95,6 +105,8 @@ class FlightInfo(IMGFile):
         self.total_amount = 0
         for amount in re.finditer(FLIGHT_INFO_AMOUNT, self.text):
             self.total_amount += int(amount.group(1))
+
+        self.is_valid_seat = (ECONOMY_CLASS in self.text)
         self.is_loaded = True
 
     def validate(self):
@@ -206,3 +218,23 @@ class TaxiInfo(PDFFile):
         if not self.is_loaded:
             error.append(LOAD_ERROR.format(type='行程单', path=self.path))
         return error, warning
+    
+class PaperMaterial:
+    def __init__(self, total_amount: float, text: str):
+        self.total_amount = total_amount
+        self.text = text
+
+    def validate(self):
+        error = []
+        warning = []
+        if not self.total_amount:
+            error.append(UNASSIGNED_PAPER_AMOUNT)
+        if not self.text:
+            error.append(UNASSIGNED_PAPER_TEXT)
+        return error, warning
+    
+    @property
+    def info(self):
+        attri = ['金额', '说明']
+        result = dict({'金额': self.total_amount, '说明': self.text})
+        return attri, result

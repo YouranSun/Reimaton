@@ -5,15 +5,25 @@ from datetime import datetime
 import itertools
 import shutil
 import pandas as pd
-import numpy as np
 from openpyxl import Workbook
 
 
 from typing import List, Optional
 from collections import Counter
-from Document import Fapiao, Combined, TaxiInfo, FlightInfo
+from Document import Fapiao, Combined, TaxiInfo, FlightInfo, PaperMaterial
 
-from ErrorMessage import LOAD_ERROR, TRIP_NOT_COVERED, AMOUNT_NOT_COVERED, REPEATED_FAPIAO, UNTYPICAL_REGISTRATION_FEE, TRIP_NOT_INVOLVED, COMBINED_NO_TRIP, FAPIAO_FOR_FLIGHT_NO_TRIP, TRIP_REPEATED
+from ErrorMessage import (
+    LOAD_ERROR,
+    TRIP_NOT_COVERED,
+    AMOUNT_NOT_COVERED,
+    REPEATED_FAPIAO,
+    UNTYPICAL_REGISTRATION_FEE,
+    TRIP_NOT_INVOLVED,
+    COMBINED_NO_TRIP,
+    FAPIAO_FOR_FLIGHT_NO_TRIP,
+    TRIP_REPEATED,
+    INVALID_SEAT,
+)
 
 class Certificate:
     def __init__(self, path):
@@ -37,16 +47,23 @@ class Certificate:
 class Record:
 
     def __init__(self, path):
-        self.fapiao: Optional[Fapiao | Combined] = None
+        self.fapiao: Optional[Fapiao | Combined | PaperMaterial] = None
         self.certificates: List[Certificate] = []
         self.trips: List[tuple] = []
 
-        filename, fileextension = os.path.splitext(path)
-        if fileextension == ".pdf":
-            self.fapiao = Fapiao(path)
-        else:
-            self.fapiao = Combined(path)
-        self.fapiao.load_info()
+        if path:
+            filename, fileextension = os.path.splitext(path)
+            if fileextension == '.pdf':
+                self.fapiao = Fapiao(path)
+            elif fileextension == 'png':
+                self.fapiao = Combined(path)
+            self.fapiao.load_info()
+
+    @classmethod
+    def from_paper(cls, fapiao: PaperMaterial):
+        instance = Record(None)
+        instance.fapiao = fapiao
+        return instance
 
     @property
     def info(self):
@@ -109,6 +126,8 @@ class Record:
                     if not covered:
                         warning.append(TRIP_NOT_COVERED.format(path=self.fapiao.path, trip=Record.trip_to_str(trip)))
             else:
+                if not self.fapiao.is_valid_seat:
+                    error.append(INVALID_SEAT.format(path=self.fapiao.path))
                 if not self.trips:
                     error.append(COMBINED_NO_TRIP.format(path=self.fapiao.path))
                 for trip in self.trips:
@@ -118,26 +137,38 @@ class Record:
                     if not contestant_found or not trip_found:
                         warning.append(TRIP_NOT_COVERED.format(path=self.fapiao.path, trip=Record.trip_to_str(trip)))
 
-        if parent_type == 'registration':
+        elif parent_type == 'registration':
             if self.fapiao.total_amount % 1500 != 0 and self.fapiao.total_amount % 1600 != 0:
                 warning.append(UNTYPICAL_REGISTRATION_FEE.format(path=self.fapiao.path))
+
         return error, warning
 
 FAPIAO_FILE_NAME = "{type}-{index}-发票-{amount}{ext}"
 CERT_FILE_NAME = "{type1}-{index1}-{type2}-{index2}{ext}"
+PAPER_NAME = "{type}-{index}"
 EXTRA_AMOUNT = "扣除代订附加费用{amount}元"
 
 class Schema:
+    name: dict = {
+        'traffic': '交通',
+        'paper': '纸质材料',
+        'hostel': '住宿',
+        'registration': '报名费'
+    }
+
     def __init__(self):
         self.home_city: str = '深圳'
         self.dest_city: str = ''
         self.contestants: List[str] = []
-        self.traffic: List[Record] = []
-        self.hostel: List[Record] = []
-        self.registration: List[Record] = []
+        self.records = {
+            'traffic': [],
+            'paper': [],
+            'hostel': [],
+            'registration': []
+        }
         self.error: List[str] = []
         self.warning: List[str] = []
-        self.last_gen_time = None
+        self.last_gen_time: datetime = None
 
     def add_contestant(self, name: str):
         if name in self.contestants:
@@ -152,32 +183,20 @@ class Schema:
 
     def upd_city(self, city: str):
         self.dest_city = city
-        for record in self.traffic:
+        for record in self.records['traffic']:
             record.trips = []
 
-    def add_traffic(self, record: Record):
-        self.traffic.append(record)
+    def add_record(self, record_type: str, record: Record):
+        self.records[record_type].append(record)
 
-    def del_traffic(self, record: Record):
-        self.traffic.remove(record)
-
-    def add_hostel(self, record: Record):
-        self.hostel.append(record)
-
-    def del_hostel(self, record: Record):
-        self.hostel.remove(record)
-
-    def add_registration(self, record: Record):
-        self.registration.append(record)
-
-    def del_registration(self, record: Record):
-        self.registration.remove(record)
+    def del_record(self, record_type: str, record: Record):
+        self.records[record_type].remove(record)
 
     def validate(self):
         self.error = []
         self.warning = []
 
-        all_trips = list(itertools.chain.from_iterable([record.trips for record in self.traffic]))
+        all_trips = list(itertools.chain.from_iterable([record.trips for record in self.records['traffic'] + self.records['paper']]))
 
         for contestant in self.contestants:
             for city1, city2 in [(self.home_city, self.dest_city), (self.dest_city, self.home_city)]:
@@ -187,32 +206,22 @@ class Schema:
                 elif count > 1:
                     self.warning.append(TRIP_REPEATED.format(trip=Record.trip_to_str((contestant, city1, city2))))
 
-        all_fapiao_paths = Counter([record.fapiao.path for record in self.traffic + self.hostel + self.registration])
+        all_fapiao_paths = Counter([record.fapiao.path for record in list(itertools.chain.from_iterable(self.records.values())) if type(record.fapiao) != PaperMaterial])
         self.error.extend([REPEATED_FAPIAO.format(path=path) for path, cnt in all_fapiao_paths.items() if cnt > 1])
 
-        errors_warnings = [record.validate('traffic') for record in self.traffic]
-        self.error.extend(list(itertools.chain.from_iterable([e for e, _ in errors_warnings])))
-        # print(list(itertools.chain.from_iterable([w for _, w in errors_warnings])))
-        self.warning.extend(list(itertools.chain.from_iterable([w for _, w in errors_warnings])))
-        errors_warnings = [record.validate('hostel') for record in self.hostel]
-        self.error.extend(list(itertools.chain.from_iterable([e for e, _ in errors_warnings])))
-        self.warning.extend(list(itertools.chain.from_iterable([w for _, w in errors_warnings])))
-        errors_warnings = [record.validate('registration') for record in self.registration]
-        self.error.extend(list(itertools.chain.from_iterable([e for e, _ in errors_warnings])))
-        self.warning.extend(list(itertools.chain.from_iterable([w for _, w in errors_warnings])))
+        for record_type, record_list in self.records.items():
+            errors_warnings = [record.validate(record_type) for record in record_list]
+            self.error.extend(list(itertools.chain.from_iterable([e for e, _ in errors_warnings])))
+            self.warning.extend(list(itertools.chain.from_iterable([w for _, w in errors_warnings])))
 
     def _copy_files(self, path):
 
-        for i, record in enumerate(self.traffic):
-            shutil.copy(record.fapiao.path, os.path.join(path, FAPIAO_FILE_NAME.format(type='交通', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)))
-            for j, cert in enumerate(record.certificates):
-                shutil.copy(cert.cert.path, os.path.join(path, CERT_FILE_NAME.format(type1='交通', index1=i+1, index2=j+1, type2=cert.cert.docu_type, ext=cert.cert.extension)))
-        
-        for i, record in enumerate(self.hostel):
-            shutil.copy(record.fapiao.path, os.path.join(path, FAPIAO_FILE_NAME.format(type='住宿', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)))
-
-        for i, record in enumerate(self.registration):
-            shutil.copy(record.fapiao.path, os.path.join(path, FAPIAO_FILE_NAME.format(type='报名费', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)))
+        for record_type, record_list in self.records.items():
+            if record_type != 'paper':
+                for i, record in enumerate(record_list):
+                    shutil.copy(record.fapiao.path, os.path.join(path, FAPIAO_FILE_NAME.format(type=self.name[record_type], index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)))
+                    for j, cert in enumerate(record.certificates):
+                        shutil.copy(cert.cert.path, os.path.join(path, CERT_FILE_NAME.format(type1=self.name[record_type], index1=i+1, index2=j+1, type2=cert.cert.docu_type, ext=cert.cert.extension)))
 
     def _write_table(self, path):
         table_path = os.path.join(path, '报销表.xlsx')
@@ -220,8 +229,9 @@ class Schema:
 
         sum_amount = 0
         cell_to_merge = []
+        blocks = []
 
-        for i, record in enumerate(self.traffic):
+        for i, record in enumerate(self.records['traffic']):
             sum_amount += record.fapiao.total_amount
             result = {
                 '发票': [FAPIAO_FILE_NAME.format(type='交通', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)],
@@ -233,9 +243,10 @@ class Schema:
             }
             block = pd.DataFrame.from_dict(result, orient='index').T
             cell_to_merge.append((len(data), len(data) + len(block)))
+            blocks.append(block)
             data = pd.concat([data, block])
 
-        for i, record in enumerate(self.hostel):
+        for i, record in enumerate(self.records['hostel']):
             sum_amount += record.fapiao.total_amount
             result = {
                 '发票': [FAPIAO_FILE_NAME.format(type='住宿', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)],
@@ -243,22 +254,29 @@ class Schema:
                 '证明文件': ['水单请见纸质报销材料']
             }
             block = pd.DataFrame.from_dict(result, orient='index').T
-            cell_to_merge.append((len(data), len(data) + len(block)))
-            data = pd.concat([data, block])
-
-        for i, record in enumerate(self.registration):
+            blocks.append(block)
+            
+        for i, record in enumerate(self.records['registration']):
             sum_amount += record.fapiao.total_amount
             result = {
                 '发票': [FAPIAO_FILE_NAME.format(type='报名费', index=i+1, amount=record.fapiao.total_amount, ext=record.fapiao.extension)],
                 '金额': [record.fapiao.total_amount]
             }
             block = pd.DataFrame.from_dict(result, orient='index').T
+            blocks.append(block)
+            
+        for i, record in enumerate(self.records['paper']):
+            sum_amount += record.fapiao.total_amount
+            result = {
+                '发票': [PAPER_NAME.format(type='纸质材料', index=i+1)],
+                '金额': [record.fapiao.total_amount],
+                '行程': [Record.trip_to_str(trip) for trip in record.trips]
+            }
+            block = pd.DataFrame.from_dict(result, orient='index').T
             cell_to_merge.append((len(data), len(data) + len(block)))
-            data = pd.concat([data, block], ignore_index=True)
+            blocks.append(block)
 
-        data = pd.concat([data, pd.DataFrame({'发票': ['总金额'], '金额': [sum_amount]})], ignore_index=True)
-
-        print(data.head)
+        data = pd.concat([data] + blocks + [pd.DataFrame({'发票': ['总金额'], '金额': [sum_amount]})], ignore_index=True)
 
         with pd.ExcelWriter(table_path, engine="xlsxwriter") as writer:
             worksheet = writer.book.add_worksheet('报销表')
@@ -273,7 +291,7 @@ class Schema:
         os.mkdir(path)
         self.validate()
         # sprint(self.warning)
-        for record in self.traffic + self.hostel + self.registration:
+        for record in self.records['traffic'] + self.records['hostel'] + self.records['registration']:
             if not record.fapiao.is_loaded:
                 raise FileNotFoundError(LOAD_ERROR.format(type='发票', path=record.fapiao.path) + '，不能继续生成')
             for cert in record.certificates:
@@ -286,6 +304,3 @@ class Schema:
         self._copy_files(path)
         self._write_table(path)
         self.last_gen_time = datetime.now()
-
-
-        

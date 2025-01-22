@@ -14,3 +14,8 @@ TRIP_REPEATED = '行程{trip}出现在多个报销文件中'
 
 COMBINED_NO_TRIP = '合订单{path}没有指定任何行程'
 FAPIAO_FOR_FLIGHT_NO_TRIP = '发票{path}可能是机票发票，但没有指定任何行程'
+
+INVALID_SEAT = '合订单{path}的舱位不在经济舱列表之中'
+
+UNASSIGNED_PAPER_AMOUNT = '纸质材料没有说明金额'
+UNASSIGNED_PAPER_TEXT = '金额为{amount}的纸质材料没有说明内容'
