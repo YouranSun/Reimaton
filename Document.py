@@ -29,7 +29,7 @@ class Fapiao(PDFFile):
     extra_amount: float = None
 
     def load_info(self):
-        if self.text is None:
+        if not hasattr(self, 'text') or self.text is None:
             return
 
         self.has_title = self.find_substring(GOUMAIFANG_MINGCHENG)
@@ -99,7 +99,7 @@ class FlightInfo(IMGFile):
     total_amount: int = 0
 
     def load_info(self):
-        if self.text is None:
+        if not hasattr(self, 'text') or self.text is None:
             return
 
         self.total_amount = 0
@@ -136,7 +136,7 @@ class Combined(IMGFile):
 
 
     def load_info(self):
-        if self.text is None:
+        if not hasattr(self, 'text') or self.text is None:
             return
 
         flight_item = re.search(FLIGHT_NUMBER + r'\s*' + '([A-Z])', self.text)
@@ -196,7 +196,7 @@ class TaxiInfo(PDFFile):
     total_amount: float = None
 
     def load_info(self):
-        if self.text is None:
+        if not hasattr(self, 'text') or self.text is None:
             return
 
         amount_item = re.finditer(XINGCHENGDAN_AMOUNT, self.text)
