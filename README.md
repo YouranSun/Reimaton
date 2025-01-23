@@ -4,13 +4,15 @@
 
 *Reimaton* is a GUI programme that helps you generate a valid reimbursement application based on your Fapiao and other documents.
 
-It aims at improving the efficiency of the reimbursement process for the University's XCPC team, especially avoiding the back-and-forth caused by mistakes in the reimbursement materials.
+It aims to improve the efficiency of the reimbursement process for the University's XCPC team, especially avoiding the back-and-forth caused by mistakes in the reimbursement materials.
 
-<img src="wechat1.jpg" alt="wechat1" style="zoom:25%;" />
+<table><tr>
+<td><img src="wechat1.jpg" alt="wechat1" /></td>
 
-<img src="wechat2.jpg" alt="wechat2" style="zoom:25%;" />
+<td><img src="wechat2.jpg" alt="wechat2" /></td>
 
-<img src="wechat3.jpg" alt="wechat3" style="zoom:25%;" />
+<td><img src="wechat3.jpg" alt="wechat3" /></td>
+</tr><table>
 
 #### Dependencies & Declaration
 
@@ -23,13 +25,13 @@ The project is for non-commercial use. Author(s) of this project don't take any 
 
 #### Installing & Running *Reimaton*
 
-The project is still in-progress. Currently *Reimaton* can be run as a Python programme on Windows.
+The project is still in progress. Currently *Reimaton* can be run as a Python programme on Windows.
 
 1. ```bash
    git clone https://github.com/YouranSun/Reimaton
    cd Reimaton
    pip install -r requirements.txt
-```
+   ```
    
 2. Install Tesseract [here](https://github.com/UB-Mannheim/tesseract/wiki). Make sure it is added to your system paths. Check it by:
 
@@ -46,9 +48,9 @@ The project is still in-progress. Currently *Reimaton* can be run as a Python pr
 
 ##### “发票-证明文件-说明” Diagram
 
-*Reimaton* follows a “发票-证明文件-说明” diagram for reimbursement items. “发票” is the basic element in the reimbursement application. Each piece of 发票 is uniquely assigned with an amount of money, and the total amount of the reimbursement is the sum of amount from each piece of 发票.
+*Reimaton* follows a “发票-证明文件-说明” diagram for reimbursement items. “发票” is the basic element in the reimbursement application. Each piece of 发票 is uniquely assigned an amount of money, and the total amount of the reimbursement is the sum of the amount from each piece of 发票.
 
-Each piece of 发票 is related to some 证明文件, indicating the corresponding consumption of the 发票 and giving evidence that the it is under the University's standard.
+Each piece of 发票 is related to some 证明文件, indicating the corresponding consumption of the 发票 and giving evidence that it is under the University's standard.
 
 Other than 证明文件, it is necessary to attach some 说明 to help the school staff better understand the reimbursement items.
 
@@ -101,7 +103,7 @@ Here are currently supported functionalities:
 * Attach a 舱位截图 file to some 电子发票.
 * Add a record of 纸质发票, including its 金额 and 说明.
 * Attach a 行程说明 to some 发票.
-* Detecting 附加费用 in a 电子发票 and subtract it automatically from the amount.
+* Detecting 附加费用 in a 电子发票 and subtracting it automatically from the amount.
 * Remove any file from the reimbursement scheme.
 * Validate the current reimbursement scheme with potential [mistakes](#Types of mistakes) and provide **errors** and **warnings**.
 * Generate a directory that contains well-renamed documents and a `.xlsx` file indicating the corresponding relationships of these documents according to the current reimbursement scheme.
