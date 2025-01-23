@@ -1,6 +1,6 @@
-## *Reimaton*: A GUI reimbursement helper
+# *Reimaton*: A GUI reimbursement helper
 
-#### About
+## About
 
 *Reimaton* is a GUI programme that helps you generate a valid reimbursement application based on your Fapiao and other documents.
 
@@ -14,7 +14,7 @@ It aims to improve the efficiency of the reimbursement process for the Universit
 <td><img src="wechat3.jpg" alt="wechat3" /></td>
 </tr><table>
 
-#### Dependencies & Declaration
+## Dependencies & Declaration
 
 *Reimaton* uses:
 
@@ -23,7 +23,7 @@ It aims to improve the efficiency of the reimbursement process for the Universit
 
 The project is for non-commercial use. Author(s) of this project don't take any responsibility for the content generated with the programme.
 
-#### Installing & Running *Reimaton*
+## Installing & Running *Reimaton*
 
 The project is still in progress. Currently *Reimaton* can be run as a Python programme on Windows.
 
@@ -42,11 +42,11 @@ The project is still in progress. Currently *Reimaton* can be run as a Python pr
 3. Download [chi_sim.traineddata](https://github.com/tesseract-ocr/tessdata/blob/main/chi_sim.traineddata) and [eng_traineddata](https://github.com/tesseract-ocr/tessdata/blob/main/eng.traineddata) under the current directory `Reimaton/` for Chinese and English OCR.
 4. Run `python main.py`.
 
-#### Reimbursement Rules
+## Reimbursement Rules
 
 *Part of this section is in Chinese for clarification.*
 
-##### “发票-证明文件-说明” Diagram
+### “发票-证明文件-说明” Diagram
 
 *Reimaton* follows a “发票-证明文件-说明” diagram for reimbursement items. “发票” is the basic element in the reimbursement application. Each piece of 发票 is uniquely assigned an amount of money, and the total amount of the reimbursement is the sum of the amount from each piece of 发票.
 
@@ -54,7 +54,7 @@ Each piece of 发票 is related to some 证明文件, indicating the correspondi
 
 Other than 证明文件, it is necessary to attach some 说明 to help the school staff better understand the reimbursement items.
 
-##### Types of reimbursement items and their formats
+### Types of reimbursement items and their formats
 
 | 报销款项 | 发票种类                   | 证明文件                                               | 说明                                           |
 | -------- | -------------------------- | ------------------------------------------------------ | ---------------------------------------------- |
@@ -66,7 +66,7 @@ Other than 证明文件, it is necessary to attach some 说明 to help the schoo
 | 纸质发票 | 火车报销凭证               | /                                                      | 行程说明（出行人、行程起终点）                 |
 |          | 纸质发票（路桥费、打车等） | /                                                      | 行程说明（出行人、行程起终点）                 |
 
-##### Types of Mistakes
+### Types of Mistakes
 
 Here are some frequent mistakes. *Reimaton* can now detect a part of them ([?] means no guaranteed accuracy):
 
@@ -92,7 +92,7 @@ Here are some frequent mistakes. *Reimaton* can now detect a part of them ([?] m
 * [ ] 酒店水单缺少原件
 * [ ] 小于A4的纸质报销材料没有粘贴在A4纸上提交
 
-#### Functionalities
+## Functionalities
 
 *Reimaton* helps with **real** reimbursement materials. It is not *Reimaton*'s work to deal with other files.
 
@@ -108,7 +108,7 @@ Here are currently supported functionalities:
 * Validate the current reimbursement scheme with potential [mistakes](#Types of mistakes) and provide **errors** and **warnings**.
 * Generate a directory that contains well-renamed documents and a `.xlsx` file indicating the corresponding relationships of these documents according to the current reimbursement scheme.
 
-#### To-dos
+## To-dos
 
 * Detect more [mistakes](#Types of mistakes).
 * Support persistence (read and write reimbursement scheme from/to an existing file).
