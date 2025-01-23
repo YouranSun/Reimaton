@@ -212,7 +212,7 @@ class GUI:
         #                      foreground="black",
         #                      background="white")
         
-        ttk.Label(self.schema_scrollable_frame, text='参赛队员（点击删除）', style='Contestant.TLabel').grid(column=0, row=self.current_row, sticky='w')
+        ttk.Label(self.schema_scrollable_frame, text='参赛队员：', style='Contestant.TLabel').grid(column=0, row=self.current_row, sticky='w')
         for index, contestant in enumerate(self.schema.contestants):
             ttk.Button(self.schema_scrollable_frame, text=contestant,
                        command=lambda c=contestant: self._del_contestant(c),
@@ -371,7 +371,7 @@ class GUI:
 
     def run(self):
         self.root = Tk()
-        self.root.title("Reimbursement Automaton")
+        self.root.title("Reimaton")
         self.root.geometry("960x640")
         self.style = ttk.Style()
         self.style.configure("Vertical.TPanedwindow", background="silver", width=1)
