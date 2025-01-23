@@ -105,12 +105,12 @@ Here are currently supported functionalities:
 * Attach a 行程说明 to some 发票.
 * Detecting 附加费用 in a 电子发票 and subtracting it automatically from the amount.
 * Remove any file from the reimbursement scheme.
-* Validate the current reimbursement scheme with potential [mistakes](##types-of-mistakes) and provide **errors** and **warnings**.
+* Validate the current reimbursement scheme with potential [mistakes](#types-of-mistakes) and provide **errors** and **warnings**.
 * Generate a directory that contains well-renamed documents and a `.xlsx` file indicating the corresponding relationships of these documents according to the current reimbursement scheme.
 
 ## To-dos
 
-* Detect more [mistakes](##types-of-mistakes).
+* Detect more [mistakes](#types-of-mistakes).
 * Support persistence (read and write reimbursement scheme from/to an existing file).
 * Validate the execution on different platforms (mainly on macOS).
 * Provide an auto-install script.
