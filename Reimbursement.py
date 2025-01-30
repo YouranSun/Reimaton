@@ -6,7 +6,7 @@ import itertools
 import shutil
 import pandas as pd
 from openpyxl import Workbook
-
+import json
 
 from typing import List, Optional
 from collections import Counter
@@ -142,6 +142,29 @@ class Record:
                 warning.append(UNTYPICAL_REGISTRATION_FEE.format(path=self.fapiao.path))
 
         return error, warning
+    
+    def to_dict(self):
+        return {
+            'fapiao': self.fapiao.to_dict(),
+            'certificates': [x.path for x in self.certificates],
+            'trips': [{'contestant': trip[0], 'city1': trip[1], 'city2': trip[2]} for trip in self.trips]
+        }
+    
+    def read_from_json(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+            return data
+        except Exception:
+            return
+        
+    def write_to_json(path, data: dict):
+        try:
+            path = os.path.join(path, '历史'+datetime.now().strftime("%Y-%m-%d-%H-%M-%S")+'.json')
+            with open(path, 'w', encoding='utf-8') as file:
+                json.dump(data, file)
+        except Exception:
+            return
 
 FAPIAO_FILE_NAME = "{type}-{index}-发票-{amount}{ext}"
 CERT_FILE_NAME = "{type1}-{index1}-{type2}-{index2}{ext}"
