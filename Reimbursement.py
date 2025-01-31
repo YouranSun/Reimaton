@@ -43,6 +43,15 @@ class Certificate:
     def to_str(self):
         return self.cert.path + ' 金额：' + str(self.cert.total_amount)
 
+    @property
+    def info(self):
+        if self.cert is None:
+            attri = ['错误']
+            result = {}
+            result['错误'] = '没有发票'
+            return attri, result
+        return self.cert.info
+
 
 class Record:
 
@@ -201,7 +210,7 @@ class Schema:
     def del_contestant(self, name: str):
         if name in self.contestants:
             self.contestants.remove(name)
-        for record in self.traffic:
+        for record in self.records['traffic']:
             record.trips = [(contestant, city1, city2) for (contestant, city1, city2) in record.trips if x != name]
 
     def upd_city(self, city: str):

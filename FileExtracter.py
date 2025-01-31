@@ -56,7 +56,7 @@ import numpy as np
 # CHI_SIM_PATH = os.path.abspath('Tesseract-OCR\\tessdata\\chi_sim.traineddata')
 # ENG_PATH = os.path.abspath('Tesseract-OCR\\tessdata\\eng.traineddata')
 
-# pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR\\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR\\tesseract.exe'
 tessdata_dir = os.path.abspath('').replace('\\', '/')
 
 class IMGFile(BaseFile):
@@ -85,5 +85,6 @@ class IMGFile(BaseFile):
             self.text = ''.join([c for c in self.text if c not in string.whitespace])
 
             self.load_info()
-        except Exception:
+        except Exception as e:
+            print(e)
             return

@@ -1,0 +1,147 @@
+Custom:
+  TFrame:
+    background: "#FFFFFF"
+
+  TCanvas:
+    background: "#FFFFFF"
+
+  Vertical.TPanedwindow:
+    background: "#F0F0F0"
+    width: 0.1
+
+  TLabel: &tlabel
+    font: 
+     - '微软雅黑'
+     - 10
+     - 'bold'
+    foreground: "#000000"
+    background: "#FFFFFF"
+    padding: 5
+
+  TButton: &tbutton
+    font:
+     - '微软雅黑'
+     - 10
+     - 'bold'
+    foreground: "#FFFFFF"
+    background: "#2185D0"
+    borderwidth: 0
+    focuscolor: "#1678C2"
+    focusthickness: 0
+    padding: 5
+    bordercolor: "#2185D0"
+    focuscolor: "none"
+    width: 15
+    map:
+      background:
+       -
+        - "active"
+        - "#1678C2"
+
+  Custom.Toplevel:
+    background: "#FFFFFF"
+
+  TCombobox:
+    background: "#FFFFFF"
+    foreground: "#000000" # "#2E3440"
+    fieldbackground: "#FFFFFF"
+    fieldforeground: "#F000000"
+    selectbackground: "#FFFFFF" # "#E3F2FD"
+    selectforeground: "#000000"
+    darkcolor: "#FFFFFF"
+    lightcolor: "#FFFFFF"
+    padding: [10, 5]
+    # relief: "sunken"
+    arrowsize: 18
+    arrowcolor: "#78909C"
+    font: ["微软雅黑", 10]
+    width: 15
+    map:
+      # bordercolor:
+      #   - ["hover", "#4F46E5"]
+      #   - ["focus", "#4F46E5"]
+      arrowcolor:
+        - ["hover", "#4F46E5"]
+        - ["focus", "#4F46E5"]
+      fieldbackground: 
+        - ["pressed", "#FFFFFF"]
+      fieldforeground: 
+        - ["pressed", "#000000"]
+
+  del.TButton:
+    <<: *tbutton
+    map:
+      background:
+       -
+        - "active"
+        - "#D01919"
+
+  teal.TButton:
+    <<: *tbutton
+    background: "#00B5AD"
+    map:
+      background:
+       -
+        - "active"
+        - "#009C95"
+
+  pink.TButton:
+    <<: *tbutton
+    background: "#E03997"
+    map:
+      background:
+       -
+        - "active"
+        - "#E6168D"
+
+  yellow.TButton:
+    <<: *tbutton
+    background: "#FBBD08"
+    map:
+      background:
+       -
+        - "active"
+        - "#EAAE00"
+
+  purple.TButton:
+    <<: *tbutton
+    background: "#6435C9"
+    map:
+      background:
+       -
+        - "active"
+        - "#5829BB"
+
+  Error.TLabel:
+    <<: *tlabel
+    font:
+     - '微软雅黑'
+     - 10
+    foreground: "#FF0000"
+
+  Warning.TLabel:
+    <<: *tlabel
+    font:
+     - '微软雅黑'
+     - 10
+    foreground: "#FFA500"
+
+  teal.TLabel:
+    <<: *tlabel
+    foreground: "#FFFFFF"
+    background: "#00B5AD"
+
+  pink.TLabel:
+    <<: *tlabel
+    foreground: "#FFFFFF"
+    background: "#E03997"
+
+  yellow.TLabel:
+    <<: *tlabel
+    foreground: "#FFFFFF"
+    background: "#FBBD08"
+
+  purple.TLabel:
+    <<: *tlabel
+    foreground: "#FFFFFF"
+    background: "#6435C9"

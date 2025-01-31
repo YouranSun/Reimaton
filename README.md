@@ -2,9 +2,7 @@
 
 ## About
 
-*Reimaton* is a GUI programme that helps you generate a valid reimbursement application based on your Fapiao and other documents.
-
-It aims to improve the efficiency of the reimbursement process for the University's XCPC team, especially avoiding the back-and-forth caused by mistakes in the reimbursement materials.
+*Reimaton* is a GUI programme that helps you generate a valid reimbursement application. It aims to improve the efficiency of the university's reimbursement process for XCPC contests, avoiding the back-and-forth caused by mistakes in the reimbursement materials.
 
 <table><tr>
 <td><img src="wechat1.jpg" alt="wechat1" /></td>
@@ -25,7 +23,7 @@ The project is for non-commercial use. Author(s) of this project don't take any 
 
 ## Installing & Running *Reimaton*
 
-The project is still in progress. Currently *Reimaton* can be run as a Python programme on Windows.
+### Windows
 
 1. ```bash
    git clone https://github.com/YouranSun/Reimaton

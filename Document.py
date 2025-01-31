@@ -75,14 +75,13 @@ class Fapiao(PDFFile):
 
     @property
     def info(self):
-        attri = ['类型', '路径', '金额']
+        attri = ['类型', '金额', '路径']
         result = {}
         result['类型'] = '发票'
-
+        result['路径'] = self.path
         if not self.is_loaded:
             result['金额'] = '加载错误'
         else:
-            result['路径'] = self.path
             result['金额'] = self.total_amount
         return attri, result
 
@@ -105,6 +104,7 @@ class FlightInfo(IMGFile):
     total_amount: int = 0
 
     def load_info(self):
+        print("ok")
         if not hasattr(self, 'text') or self.text is None:
             return
 
@@ -122,6 +122,18 @@ class FlightInfo(IMGFile):
         if not self.is_loaded:
             error.append(LOAD_ERROR.format(type='舱位截图', path=self.path))
         return error, warning
+
+    @property
+    def info(self):
+        attri = ['类型', '金额', '路径']
+        result = {}
+        result['类型'] = '舱位截图'
+        result['路径'] = self.path
+        if not self.is_loaded:
+            result['金额'] = '加载错误'
+        else:
+            result['金额'] = self.total_amount
+        return attri, result
 
     def print(self):
         print("total_amount = ", self.total_amount)
@@ -216,6 +228,18 @@ class TaxiInfo(PDFFile):
             for amount in amount_item:
                 self.total_amount = max(self.total_amount, float(amount.group(1)))
         self.is_loaded = True
+
+    @property
+    def info(self):
+        attri = ['类型', '金额', '路径']
+        result = {}
+        result['类型'] = '打车行程单'
+        result['路径'] = self.path
+        if not self.is_loaded:
+            result['金额'] = '加载错误'
+        else:
+            result['金额'] = self.total_amount
+        return attri, result
 
     def print(self):
         print("total_amount: ", self.total_amount)

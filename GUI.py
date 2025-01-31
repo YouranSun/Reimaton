@@ -6,6 +6,8 @@ from Document import Fapiao, PaperMaterial, Combined
 from Reimbursement import Schema, Record, Certificate
 
 import os
+import ctypes
+import yaml
 
 class GUI:
     root: Tk = None
@@ -31,13 +33,26 @@ class GUI:
 
     path_entry: Entry = None
 
-    def _refresh_schema_window(self):
-        for widget in self.schema_scrollable_frame.winfo_children():
+    def _refresh_frame(self, frame):
+        for widget in frame.winfo_children():
             widget.destroy()
 
-    def _refresh_valid_window(self):
-        for widget in self.valid_scrollable_frame.winfo_children():
-            widget.destroy()
+    def _create_widget_in_grid(self, widget_func, location, widget_params, grid_params):
+        widget = widget_func(location, **widget_params)
+        widget.grid(sticky = 'w', pady = 2, padx = 10, **grid_params)
+        return widget
+
+    def _label(self, location, widget_params, grid_params):
+        return self._create_widget_in_grid(ttk.Label, location, widget_params, grid_params)
+    
+    def _button(self, location, widget_params, grid_params):
+        return self._create_widget_in_grid(ttk.Button, location, widget_params, grid_params)
+
+    def _combobox(self, location, widget_params, grid_params):
+        return self._create_widget_in_grid(ttk.Combobox, location, widget_params, grid_params)
+
+    def _entry(self, location, widget_params, grid_params):
+        return self._create_widget_in_grid(ttk.Entry, location, widget_params, grid_params)
 
     def _add_contestant(self):
         name = simpledialog.askstring("输入", "队员姓名:")
@@ -54,20 +69,20 @@ class GUI:
         self.display()
 
     def _add_trip(self, record: Record, home_city: str, dest_city: str, contestants: List[str]):        
-        popup = Toplevel(self.root)
-        popup.title('添加行程')
+        popup = Toplevel(self.root, background='#FFFFFF', padx=10, pady=10)
+        popup.title('➕添加行程')
         popup.lift()
         options_trips = [home_city + '-' + dest_city, dest_city + '-' + home_city]
         options_contestants = contestants
 
-        frm = ttk.Frame(popup, padding=10)
-        frm.grid()
-        label_trips = ttk.Label(popup, text='选择选手').grid(column=0, row=0, sticky='w')
-        box_contestants = ttk.Combobox(popup, values=options_contestants, state="readonly")
-        box_contestants.grid(column=1,row=0, sticky='w')
-        label_trips = ttk.Label(popup, text='选择行程').grid(column=2, row=0, sticky='w')
-        box_trips = ttk.Combobox(popup, values=options_trips, state="readonly")
-        box_trips.grid(column=3,row=0, sticky='w')
+        label_trips = self._label(popup, widget_params={'text': '选择选手'}, grid_params={'column': 0, 'row': 0})
+        box_contestants = self._combobox(popup,
+                                         widget_params={'values': options_contestants, 'state': 'readonly', 'width': 15},
+                                         grid_params={'column': 1, 'row': 0})
+        label_trips = self._label(popup, widget_params={'text': '选择行程'}, grid_params={'column': 2, 'row': 0})
+        box_trips = self._combobox(popup,
+                                         widget_params={'values': options_trips, 'state': 'readonly', 'width': 15},
+                                         grid_params={'column': 3, 'row': 0})
 
         def get_selection():
             try:
@@ -82,7 +97,7 @@ class GUI:
                 messagebox.showwarning("错误：", str(e))
             popup.destroy()  # 关闭弹窗
 
-        button = ttk.Button(popup, text="确定", command=get_selection).grid(column=3, row=2, sticky='w')
+        self._button(popup, widget_params={'text': '确定', 'command': get_selection}, grid_params={'column': 3, 'row': 2})
 
         self.root.wait_window(popup)
         self.display()
@@ -148,18 +163,14 @@ class GUI:
         self.display()
 
     def _add_paper(self):
-        popup = Toplevel(self.root)
-        popup.title('添加纸质报销材料')
+        popup = Toplevel(self.root, background="#FFFFFF", padx=10, pady=10)
+        popup.title('➕添加纸质报销材料')
         popup.lift()
 
-        frm = ttk.Frame(popup, padding=10)
-        frm.grid()
-        label_amount = ttk.Label(popup, text='金额（元）').grid(column=0, row=0, sticky='w')
-        entry_amount = ttk.Entry(popup, width=10)
-        entry_amount.grid(column=1,row=0, sticky='w')
-        label_text = ttk.Label(popup, text='材料说明').grid(column=0, row=1, sticky='w')
-        entry_text = ttk.Entry(popup, width=50)
-        entry_text.grid(column=1,row=1, sticky='w')
+        label_amount = self._label(popup, widget_params={'text': '金额（元）'}, grid_params={'column': 0, 'row': 0})
+        entry_amount = self._entry(popup, widget_params={'width': 50}, grid_params={'column': 1, 'row': 0})
+        label_text = self._label(popup, widget_params={'text': '材料说明'}, grid_params={'column': 0, 'row': 1})
+        entry_text = self._entry(popup, widget_params={'width': 50}, grid_params={'column': 1, 'row': 1})
 
         def get_entry():
             try:
@@ -264,133 +275,144 @@ class GUI:
         self.display()
 
     def _display_contestants(self):
-        # self.style.map("Contestant.TButton",
-        #                 background=[("active", "red"), ("pressed", "red")],  # 鼠标悬停和按下时的背景色
-        #                 foreground=[("active", "white"), ("pressed", "yellow")])  # 鼠标悬停和按下时的前景色
-        # self.style.map("ContestantAdd.TButton",
-        #                 background=[("active", "green"), ("pressed", "red")],  # 鼠标悬停和按下时的背景色
-        #                 foreground=[("active", "white"), ("pressed", "yellow")])  # 鼠标悬停和按下时的前景色
-        # self.style.configure("Contestant.TLabel",
-        #                      foreground="black",
-        #                      background="white")
-        
-        ttk.Label(self.schema_scrollable_frame, text='参赛队员：', style='Contestant.TLabel').grid(column=0, row=self.current_row, sticky='w')
+        self._label(self.schema_scrollable_frame,
+                    widget_params={'text': '👥参赛队员：'},
+                    grid_params={'column': 0, 'row': self.current_row})
         for index, contestant in enumerate(self.schema.contestants):
-            ttk.Button(self.schema_scrollable_frame, text=contestant,
-                       command=lambda c=contestant: self._del_contestant(c),
-                       style='Contestant.TButton').grid(column=index + 1,row=self.current_row, sticky='w')
-        
-        ttk.Button(self.schema_scrollable_frame, text='添加队员', command=self._add_contestant, style='ContestantAdd.TButton').grid(column=len(self.schema.contestants) + 1, row=self.current_row, sticky='w')
-        
+            self._button(self.schema_scrollable_frame,
+                         widget_params={'text': contestant, 'style': 'del.TButton', 'command': lambda c=contestant: self._del_contestant(c)},
+                         grid_params={'column': index + 1, 'row': self.current_row})
+        self._button(self.schema_scrollable_frame,
+                     widget_params={'text': '➕添加队员', 'command': self._add_contestant},
+                     grid_params={'column': len(self.schema.contestants) + 1, 'row': self.current_row})
         self.current_row += 1
 
     def _display_city(self):
-        ttk.Label(self.schema_scrollable_frame, text='举办城市：' + self.schema.dest_city).grid(column=0, row=self.current_row, sticky='w')
-        ttk.Button(self.schema_scrollable_frame, text="修改", command=self._upd_city).grid(column=1, row=self.current_row, sticky='w')
+        self._label(self.schema_scrollable_frame,
+                    widget_params={'text': '🗺举办城市：' + self.schema.dest_city},
+                    grid_params={'column': 0, 'row': self.current_row})
+        self._button(self.schema_scrollable_frame,
+                     widget_params={'text': "✍修改", 'command': self._upd_city},
+                     grid_params={'column': 1, 'row': self.current_row})
         self.current_row += 1
 
     def _display_record(self, record, record_type):
+        styles = {'路径': 'pink.TLabel', '金额': 'teal.TLabel', '类型': 'yellow.TLabel'}
+        icon = {'路径': '📁', '金额': '¥', '类型': ''}
         attri, result = record.info
         for i, t in enumerate(attri):
-            ttk.Label(self.schema_scrollable_frame, text = t + '：' + str(result[t])).grid(column=i+1, row=self.current_row, sticky='w')
+            self._label(self.schema_scrollable_frame,
+                        widget_params={'text': icon[t] + str(result[t]), 'style': styles[t]},
+                        grid_params={'column': i+2, 'row': self.current_row})
         self.current_row += 1
 
         if record_type == 'traffic' or record_type == 'paper':  
-            ttk.Label(self.schema_scrollable_frame, text='行程').grid(column=1, row=self.current_row, sticky='w')
+            self._label(self.schema_scrollable_frame,
+                        widget_params={'text': '行程'},
+                        grid_params={'column': 1, 'row': self.current_row})
             for i, t in enumerate(record.trips):
-                ttk.Label(self.schema_scrollable_frame, text=Record.trip_to_str(t)).grid(column=2, row=self.current_row, sticky='w')
-                ttk.Button(self.schema_scrollable_frame, text='删除行程', command=lambda r=record, t=t: self._del_trip(r, t)).grid(column=3, row=self.current_row, sticky='w')
+                self._label(self.schema_scrollable_frame,
+                            widget_params={'text': Record.trip_to_str(t)},
+                            grid_params={'column': 2, 'row': self.current_row})
+                self._button(self.schema_scrollable_frame,
+                             widget_params={'text': '删除行程', 'command': lambda r=record, t=t: self._del_trip(r, t)}, 
+                             grid_params={'column': 3, 'row': self.current_row})
                 self.current_row += 1
             self.current_row += 1
 
-            ttk.Button(self.schema_scrollable_frame, text='添加行程', command=lambda r=record: self._add_trip(r, self.schema.home_city, self.schema.dest_city, self.schema.contestants)).grid(column=1, row=self.current_row, sticky='w')
+            self._button(self.schema_scrollable_frame,
+                         widget_params={'text': '➕添加行程', 'command': lambda r=record: self._add_trip(r, self.schema.home_city, self.schema.dest_city, self.schema.contestants)},
+                         grid_params={'column': 1, 'row': self.current_row})
             self.current_row += 1
         
+            
+
             if type(record.fapiao) == Fapiao:
-                ttk.Label(self.schema_scrollable_frame, text='行程单').grid(column=1, row=self.current_row, sticky='w')
+                self._label(self.schema_scrollable_frame,
+                            widget_params={'text': '行程单'},
+                            grid_params={'column': 1, 'row': self.current_row})
                 for i, t in enumerate(record.certificates):
-                    ttk.Label(self.schema_scrollable_frame, text=t.to_str()).grid(column=2, row=self.current_row, sticky='w')
-                    ttk.Button(self.schema_scrollable_frame, text='删除行程单', command=lambda r=record, t=t: self._del_cert(r, t)).grid(column=3, row=self.current_row, sticky='w')
+                    attri, result = t.info
+                    print(attri)
+                    print(result)
+                    for j, s in enumerate(attri):
+                        self._label(self.schema_scrollable_frame,
+                                    widget_params={'text': icon[s] + str(result[s]), 'style': styles[s]},
+                                    grid_params={'column': 2+j, 'row': self.current_row})
+                    self._button(self.schema_scrollable_frame,
+                                 widget_params={'text': '删除行程单', 'command': lambda r=record, t=t: self._del_cert(r, t)},
+                                 grid_params={'column': 2+len(attri), 'row': self.current_row})
                     self.current_row += 1
-                self.current_row += 1
+                self.current_row += 1   
                 
-                ttk.Button(self.schema_scrollable_frame, text='添加行程单', command=lambda r=record: self._add_cert(r)).grid(column=1, row=self.current_row, sticky='w')
+                self._button(self.schema_scrollable_frame,
+                             widget_params={'text': '➕添加行程单', 'command': lambda r=record: self._add_cert(r)},
+                             grid_params={'column': 1, 'row': self.current_row})
                 self.current_row += 1
             elif type(record.fapiao) == Combined:
-                ttk.Label(self.schema_scrollable_frame, text='合订单无需行程单证明').grid(column=1, row=self.current_row, sticky='w')
+                self._label(self.schema_scrollable_frame,
+                            widget_params={'text': '合订单无需行程单证明'},
+                            grid_params={'column': 1, 'row': self.current_row})
                 self.current_row += 1
 
+    def _display_reim_item(self, type, add_text, add_func, del_func):
+        icon = {'traffic': '🛫', 'hostel': '🏠', 'registration': '✅', 'paper': '📃'}
+        self._label(self.schema_scrollable_frame, widget_params={'text': icon[type] + Schema.name[type]}, grid_params={'column': 0, 'row': self.current_row})
+        self.current_row += 1
+        for i, record in enumerate(self.schema.records[type]):
+            self._button(self.schema_scrollable_frame, widget_params={'text': str(i), 'command': lambda r=record: del_func(r), 'style': 'del.TButton'}, grid_params={'column': 0, 'row': self.current_row})
+            self._display_record(record, record_type=type)
+        self._button(self.schema_scrollable_frame, widget_params={'text': add_text, 'command': add_func}, grid_params={'column': 0, 'row': self.current_row})
+        self.current_row += 1
+
     def _display_traffic(self):
-        ttk.Label(self.schema_scrollable_frame, text='交通').grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
-        for i, record in enumerate(self.schema.records['traffic']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_traffic(r)).grid(column=0, row=self.current_row, sticky='w')
-            self._display_record(record, record_type='traffic')
-        ttk.Button(self.schema_scrollable_frame, text='添加发票/合订单', command=self._add_traffic).grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
+        self._display_reim_item(type='traffic', add_text='➕发票/合订单', add_func=self._add_traffic, del_func=self._del_traffic)
 
     def _display_hostel(self):
-        ttk.Label(self.schema_scrollable_frame, text='住宿').grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
-        for i, record in enumerate(self.schema.records['hostel']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_hostel(r)).grid(column=0, row=self.current_row, sticky='w')
-            self._display_record(record, record_type='hostel')
-        ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_hostel).grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
+        self._display_reim_item(type='hostel', add_text='➕添加发票', add_func=self._add_hostel, del_func=self._del_hostel)
 
     def _display_registration(self):
-        ttk.Label(self.schema_scrollable_frame, text='报名费').grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
-        for i, record in enumerate(self.schema.records['registration']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_registration(r)).grid(column=0, row=self.current_row, sticky='w')
-            self._display_record(record, record_type='registration')
-        ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_registration).grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
+        self._display_reim_item(type='registration', add_text='➕添加发票', add_func=self._add_registration, del_func=self._del_registration)
 
     def _display_paper(self):
-        ttk.Label(self.schema_scrollable_frame, text='纸质材料').grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
-        for i, record in enumerate(self.schema.records['paper']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_paper(r)).grid(column=0, row=self.current_row, sticky='w')
-            self._display_record(record, record_type='paper')
-        ttk.Button(self.schema_scrollable_frame, text='添加纸质材料', command=self._add_paper).grid(column=0, row=self.current_row, sticky='w')
-        self.current_row += 1
+        self._display_reim_item(type='paper', add_text='➕添加纸质材料', add_func=self._add_paper, del_func=self._del_paper)
 
     def _display_error_message(self):
         current_row = 0
-        ttk.Label(self.valid_scrollable_frame, text='错误', foreground='red').grid(column=0,row=current_row, sticky='w')
+        self._label(self.valid_scrollable_frame, widget_params={'text': '错误', 'foreground': 'red'}, grid_params={'column': 0, 'row': current_row})
         current_row += 1
         for e in self.schema.error:
-            ttk.Label(self.valid_scrollable_frame, text=e, foreground='red').grid(column=0,row=current_row, sticky='w')
+            self._label(self.valid_scrollable_frame, widget_params={'text': e, 'foreground': 'red', 'style': 'Error.TLabel'}, grid_params={'column': 0, 'row': current_row})
             current_row += 1
-        ttk.Label(self.valid_scrollable_frame, text='警告', foreground='orange').grid(column=0,row=current_row, sticky='w')
+        self._label(self.valid_scrollable_frame, widget_params={'text': '警告', 'foreground': 'orange'}, grid_params={'column': 0, 'row': current_row})
         current_row += 1
         for w in self.schema.warning:
-            ttk.Label(self.valid_scrollable_frame, text=w, foreground='orange').grid(column=0,row=current_row, sticky='w')
+            self._label(self.valid_scrollable_frame, widget_params={'text': w, 'foreground': 'orange', 'style': 'Warning.TLabel'}, grid_params={'column': 0, 'row': current_row})
             current_row += 1
 
 
     def _display_validation_generation(self):
         current_row = 0
-        ttk.Button(self.tools_container, text='存储', command=self._store).grid(column=0, row=current_row, sticky='w')
-        ttk.Button(self.tools_container, text='读取', command=self._read).grid(column=1, row=current_row, sticky='w')
-        ttk.Button(self.tools_container, text='校验', command=self._validate).grid(column=2, row=current_row, sticky='w')
-        ttk.Button(self.tools_container, text='生成', command=self._generate).grid(column=3, row=current_row, sticky='w')
+        self._button(self.tools_container, widget_params={'text': '存储', 'style': 'purple.TButton', 'command': self._store}, grid_params={'column': 0, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '读取', 'style': 'pink.TButton', 'command': self._read}, grid_params={'column': 1, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '校验', 'style': 'yellow.TButton', 'command': self._validate}, grid_params={'column': 2, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '生成', 'style': 'teal.TButton', 'command': self._generate}, grid_params={'column': 3, 'row': current_row})
+
         self.path_entry = ttk.Entry(self.tools_container, width=50)
-        self.path_entry.grid(column=4,row=current_row, sticky='w')
+        self.path_entry.grid(column=4,row=current_row, sticky='w', padx=10)
         def select_directory():
             """打开目录选择对话框，并将选择的路径更新到 Entry 组件中"""
             directory = filedialog.askdirectory()  # 弹出目录选择对话框
             if directory:  # 如果用户选择了目录
                 self.path_entry.delete(0, END)  # 清空当前内容
                 self.path_entry.insert(0, directory)  # 插入新路径
-        ttk.Button(self.tools_container, text="选择目标文件夹", command=select_directory).grid(column=5, row=current_row, sticky='w')
-        ttk.Label(self.tools_container, text='上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), foreground='green').grid(column=6, row=current_row, sticky='w')
+        self._button(self.tools_container, widget_params={'text': '选择目标文件夹', 'command': select_directory}, grid_params={'column': 5, 'row': current_row})
+        self._label(self.tools_container, widget_params={'text': '上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), 'foreground': 'green'}, grid_params={'column': 6, 'row': current_row})
 
     def display(self):
         self.current_row = 0
-        self._refresh_schema_window()
-        self._refresh_valid_window()
+        self._refresh_frame(self.schema_scrollable_frame)
+        self._refresh_frame(self.valid_scrollable_frame)
         self._display_validation_generation()
         self._display_contestants()
         self._display_city()
@@ -424,34 +446,47 @@ class GUI:
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # 布局Canvas和滚动条
+        scrollable_frame.pack(fill="both", expand=True)
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         return container, canvas, scrollable_frame, scrollbar
 
     def _create_tools(self):
         self.tools_container = ttk.Frame(self.paned_window)
+        self.tools_container.pack(side='left', fill='both', expand=True)
         self.paned_window.add(self.tools_container, weight=0)
+
+    def _set_config(self):
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        with open("style.yaml", "r", encoding="utf-8") as file:
+            config = yaml.safe_load(file)
+            for widget, properties in config['Custom'].items():
+                # print(widget, properties)
+                if "map" in properties:
+                    self.style.map(widget, **properties["map"])
+                    del properties["map"]
+                self.style.configure(widget, **properties)
 
     def run(self):
         self.root = Tk()
+        
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        ScaleFactor=ctypes.windll.shcore.GetScaleFactorForDevice(0)
+        self.root.tk.call('tk', 'scaling', ScaleFactor/75)
+        
         self.root.title("Reimaton")
-        self.root.geometry("960x640")
-        self.style = ttk.Style()
-        self.style.configure("Vertical.TPanedwindow", background="silver", width=1)
+        self.root.geometry('{0}x{1}'.format(self.root.winfo_screenwidth()-100, self.root.winfo_screenheight()-100))
+        self.root.state('zoomed')
+        
+        self._set_config()
 
         self.paned_window = ttk.PanedWindow(self.root, orient="vertical")
         self.paned_window.pack(fill="both", expand=True)
-        self.paned_window.configure(style="Vertical.TPanedwindow")  # 使用默认样式
-        # self.style.theme_use("alt")
 
         self.schema_container, self.schema_canvas, self.schema_scrollable_frame, self.schema_scrollbar = self._create_scrollable_frame(weight=1)
         self.valid_container, self.valid_canvas, self.valid_scrollable_frame, self.valid_scrollbar = self._create_scrollable_frame(weight=0)
         self._create_tools()
 
-
-        # self.scrollable_frame.grid()
-
-        # self.root.grid_columnconfigure(0, pad=10)
-        # self.root.grid_columnconfigure(1, pad=10)
         self.display()
         self.root.mainloop()
