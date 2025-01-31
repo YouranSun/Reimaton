@@ -15,7 +15,7 @@ GOUMAIFANG_MINGCHENG_OCR = "香港中文大学(深圳)"
 NASHUIREN_SHIBIEHAO = "12440300066312613F"
 QUANGUOTONGYIFAPIAO_JIANZHIZHANG = "税务局"
 
-FAPIAO_AMOUNT = r'[（(]小写[)）]\s*[¥￥]\s*' + FLOAT_2P
+FAPIAO_AMOUNT = r'[¥￥]\s*' + FLOAT_2P
 FLIGHT_INFO_AMOUNT = r'[¥￥]\s*' + INT
 COMBINED_AMOUNT = r'CNY\s*' + FLOAT_2P
 XINGCHENGDAN_AMOUNT = r"合计：\s*" + FLOAT_2P + r"元"
@@ -36,12 +36,15 @@ class Fapiao(PDFFile):
         self.has_shuihao = self.find_substring(NASHUIREN_SHIBIEHAO)
         self.has_seal = self.find_subseq(QUANGUOTONGYIFAPIAO_JIANZHIZHANG)
 
-        amount_item = re.search(FAPIAO_AMOUNT, self.text)
-        if amount_item is None:
+        all_amount = re.findall(FAPIAO_AMOUNT, self.text)
+
+        if len(all_amount) == 0:
             self.total_amount = None
             return
         else:
-            self.total_amount = float(amount_item.group(1))
+            self.total_amount = 0.0
+            for amount in all_amount:
+                self.total_amount = max(float(amount), self.total_amount)
 
         extra_item = re.search(r"代订附加\s+[^\s]+\s+[^\s]+\s+" + FLOAT_2P + r"\s+[^\s]+\s+" + FLOAT_2P, self.text)
         if extra_item is None:
@@ -90,6 +93,9 @@ class Fapiao(PDFFile):
         print("has_seal = ", self.has_seal)
         print("total_amount = ", self.total_amount)
         print("extra_amount = ", self.extra_amount)
+
+    def to_dict(self):
+        return self.path
 
 ECONOMY_CLASS = '经济舱'
 
@@ -191,6 +197,9 @@ class Combined(IMGFile):
         print('seat = ', self.seat)
         print("total_amount = ", self.total_amount)
 
+    def to_dict(self):
+        return self.path
+
 class TaxiInfo(PDFFile):
     docu_type = '行程单'
     total_amount: float = None
@@ -238,3 +247,6 @@ class PaperMaterial:
         attri = ['金额', '说明']
         result = dict({'金额': self.total_amount, '说明': self.text})
         return attri, result
+    
+    def to_dict(self):
+        return {'total_amount': self.total_amount, 'text': self.text}

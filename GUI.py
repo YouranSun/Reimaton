@@ -201,6 +201,68 @@ class GUI:
             messagebox.showwarning("错误：", str(e))
         self.display()
 
+    def _store(self):
+        folder_path = filedialog.askdirectory(
+            title="选择存储的文件夹"  # 对话框标题
+        )
+        
+        if folder_path:
+            traffic_data = [record.to_dict() for record in self.schema.records['traffic']]
+            paper_data = [record.to_dict() for record in self.schema.records['paper']]
+            hostel_data = [record.to_dict() for record in self.schema.records['hostel']]
+            registration_data = [record.to_dict() for record in self.schema.records['registration']]
+
+            all_data = {
+                'contestants': self.schema.contestants,
+                'dest_city': self.schema.dest_city,
+                'traffic': traffic_data,
+                'paper': paper_data,
+                'hostel': hostel_data,
+                'registration': registration_data
+            }
+
+            Record.write_to_json(folder_path, all_data)
+        
+        self.display()
+
+    def _read(self):
+        file_path = filedialog.askopenfilename(
+            title="选择一个 JSON 文件",  # 对话框标题
+            filetypes=[("JSON 文件", "*.json")]  # 文件类型过滤
+        )
+        
+        if file_path:
+            all_data = Record.read_from_json(file_path)
+            
+            for contestant in all_data['contestants']:
+                self.schema.add_contestant(contestant)
+
+            self.schema.upd_city(all_data['dest_city'])
+
+            for r in all_data['traffic']:
+                record = Record(r['fapiao'])
+                for certificate in r['certificates']:
+                    record.add_cert(Certificate(certificate))
+                for trip in r['trips']:
+                    record.add_trip(trip['city1'] + '-' + trip['city2'], trip['contestant'])
+                self.schema.add_record(record_type='traffic', record=record)
+
+            for r in all_data['hostel']:
+                record = Record(r['fapiao'])
+                self.schema.add_record(record_type='hostel', record=record)
+
+            for r in all_data['paper']:
+                record = Record.from_paper(PaperMaterial(total_amount=r['fapiao']['total_amount'], text=r['fapiao']['total_amount']))
+                for trip in r['trips']:
+                    record.add_trip(trip['city1'] + '-' + trip['city2'], trip['contestant'])
+                self.schema.add_record(record_type='paper', record=record)
+                
+            for r in all_data['registration']:
+                record = Record(r['fapiao'])
+                self.schema.add_record(record_type='registration', record=record)
+
+        self.display()
+
     def _display_contestants(self):
         # self.style.map("Contestant.TButton",
         #                 background=[("active", "red"), ("pressed", "red")],  # 鼠标悬停和按下时的背景色
@@ -229,7 +291,6 @@ class GUI:
 
     def _display_record(self, record, record_type):
         attri, result = record.info
-        
         for i, t in enumerate(attri):
             ttk.Label(self.schema_scrollable_frame, text = t + '：' + str(result[t])).grid(column=i+1, row=self.current_row, sticky='w')
         self.current_row += 1
@@ -272,7 +333,7 @@ class GUI:
         ttk.Label(self.schema_scrollable_frame, text='住宿').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
         for i, record in enumerate(self.schema.records['hostel']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_hostel).grid(column=0, row=self.current_row, sticky='w')
+            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_hostel(r)).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='hostel')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_hostel).grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
@@ -281,7 +342,7 @@ class GUI:
         ttk.Label(self.schema_scrollable_frame, text='报名费').grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
         for i, record in enumerate(self.schema.records['registration']):
-            ttk.Button(self.schema_scrollable_frame, text=str(i), command=self._del_registration).grid(column=0, row=self.current_row, sticky='w')
+            ttk.Button(self.schema_scrollable_frame, text=str(i), command=lambda r=record: self._del_registration(r)).grid(column=0, row=self.current_row, sticky='w')
             self._display_record(record, record_type='registration')
         ttk.Button(self.schema_scrollable_frame, text='添加发票', command=self._add_registration).grid(column=0, row=self.current_row, sticky='w')
         self.current_row += 1
@@ -311,18 +372,20 @@ class GUI:
 
     def _display_validation_generation(self):
         current_row = 0
-        ttk.Button(self.tools_container, text='校验', command=self._validate).grid(column=0, row=current_row, sticky='w')
-        ttk.Button(self.tools_container, text='生成', command=self._generate).grid(column=1, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text='存储', command=self._store).grid(column=0, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text='读取', command=self._read).grid(column=1, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text='校验', command=self._validate).grid(column=2, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text='生成', command=self._generate).grid(column=3, row=current_row, sticky='w')
         self.path_entry = ttk.Entry(self.tools_container, width=50)
-        self.path_entry.grid(column=2,row=current_row, sticky='w')
+        self.path_entry.grid(column=4,row=current_row, sticky='w')
         def select_directory():
             """打开目录选择对话框，并将选择的路径更新到 Entry 组件中"""
             directory = filedialog.askdirectory()  # 弹出目录选择对话框
             if directory:  # 如果用户选择了目录
                 self.path_entry.delete(0, END)  # 清空当前内容
                 self.path_entry.insert(0, directory)  # 插入新路径
-        ttk.Button(self.tools_container, text="选择目标文件夹", command=select_directory).grid(column=3, row=current_row, sticky='w')
-        ttk.Label(self.tools_container, text='上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), foreground='green').grid(column=4, row=current_row, sticky='w')
+        ttk.Button(self.tools_container, text="选择目标文件夹", command=select_directory).grid(column=5, row=current_row, sticky='w')
+        ttk.Label(self.tools_container, text='上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), foreground='green').grid(column=6, row=current_row, sticky='w')
 
     def display(self):
         self.current_row = 0
