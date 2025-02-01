@@ -39,7 +39,10 @@ class GUI:
 
     def _create_widget_in_grid(self, widget_func, location, widget_params, grid_params):
         widget = widget_func(location, **widget_params)
-        widget.grid(sticky = 'w', pady = 2, padx = 10, **grid_params)
+        if 'sticky' not in grid_params: grid_params['sticky'] = 'W'
+        if 'padx' not in grid_params: grid_params['padx'] = 10
+        if 'pady' not in grid_params: grid_params['pady'] = 2
+        widget.grid(**grid_params)
         return widget
 
     def _label(self, location, widget_params, grid_params):
@@ -55,8 +58,28 @@ class GUI:
         return self._create_widget_in_grid(ttk.Entry, location, widget_params, grid_params)
 
     def _add_contestant(self):
-        name = simpledialog.askstring("输入", "队员姓名:")
-        if name: self.schema.add_contestant(name)
+        popup = Toplevel(self.root, background='#FFFFFF', padx=10, pady=10)
+        popup.title('添加选手')
+        popup.lift()
+
+        self._label(popup, widget_params={'text': '添加选手'}, grid_params={'column': 0, 'row': 0})
+        entry_contestant = self._entry(popup,
+                                         widget_params={'width': 15},
+                                         grid_params={'column': 1, 'row': 0})
+
+        def get_selection():
+            try:
+                contestant = entry_contestant.get()  # 获取选中的值
+                if contestant is None or contestant == '':
+                    raise ValueError('请输入选手')
+                self.schema.add_contestant(contestant)
+            except ValueError as e:
+                messagebox.showwarning("错误：", str(e))
+            popup.destroy()  # 关闭弹窗
+
+        self._button(popup, widget_params={'text': '确定', 'command': get_selection, 'style': 'confirm.TButton'}, grid_params={'column': 3, 'row': 2})
+        
+        self.root.wait_window(popup)
         self.display()
 
     def _del_contestant(self, name: str):
@@ -64,22 +87,42 @@ class GUI:
         self.display()
 
     def _upd_city(self):
-        name = simpledialog.askstring("输入", "举办城市:")
-        if name: self.schema.upd_city(name)
+        popup = Toplevel(self.root, background='#FFFFFF', padx=10, pady=10)
+        popup.title('修改城市')
+        popup.lift()
+
+        self._label(popup, widget_params={'text': '修改城市'}, grid_params={'column': 0, 'row': 0})
+        entry_contestant = self._entry(popup,
+                                         widget_params={'width': 15},
+                                         grid_params={'column': 1, 'row': 0})
+
+        def get_selection():
+            try:
+                contestant = entry_contestant.get()  # 获取选中的值
+                if contestant is None or contestant == '':
+                    raise ValueError('请输入城市')
+                self.schema.upd_city(contestant)
+            except ValueError as e:
+                messagebox.showwarning("错误：", str(e))
+            popup.destroy()  # 关闭弹窗
+
+        self._button(popup, widget_params={'text': '确定', 'command': get_selection, 'style': 'confirm.TButton'}, grid_params={'column': 3, 'row': 2})
+        
+        self.root.wait_window(popup)
         self.display()
 
     def _add_trip(self, record: Record, home_city: str, dest_city: str, contestants: List[str]):        
         popup = Toplevel(self.root, background='#FFFFFF', padx=10, pady=10)
-        popup.title('➕添加行程')
+        popup.title('添加行程')
         popup.lift()
         options_trips = [home_city + '-' + dest_city, dest_city + '-' + home_city]
         options_contestants = contestants
 
-        label_trips = self._label(popup, widget_params={'text': '选择选手'}, grid_params={'column': 0, 'row': 0})
+        self._label(popup, widget_params={'text': '选择选手'}, grid_params={'column': 0, 'row': 0})
         box_contestants = self._combobox(popup,
                                          widget_params={'values': options_contestants, 'state': 'readonly', 'width': 15},
                                          grid_params={'column': 1, 'row': 0})
-        label_trips = self._label(popup, widget_params={'text': '选择行程'}, grid_params={'column': 2, 'row': 0})
+        self._label(popup, widget_params={'text': '选择行程'}, grid_params={'column': 2, 'row': 0})
         box_trips = self._combobox(popup,
                                          widget_params={'values': options_trips, 'state': 'readonly', 'width': 15},
                                          grid_params={'column': 3, 'row': 0})
@@ -97,7 +140,7 @@ class GUI:
                 messagebox.showwarning("错误：", str(e))
             popup.destroy()  # 关闭弹窗
 
-        self._button(popup, widget_params={'text': '确定', 'command': get_selection}, grid_params={'column': 3, 'row': 2})
+        self._button(popup, widget_params={'text': '确定', 'command': get_selection, 'style': 'confirm.TButton'}, grid_params={'column': 3, 'row': 2, 'sticky': 'E'})
 
         self.root.wait_window(popup)
         self.display()
@@ -188,7 +231,7 @@ class GUI:
                 messagebox.showwarning("错误：", str(e))
             popup.destroy()  # 关闭弹窗
 
-        button = ttk.Button(popup, text="确定", command=get_entry).grid(column=3, row=2, sticky='w')
+        self._button(popup, widget_params={'text': "确定", 'command': get_entry}, grid_params={'column': 3, 'row': 2})
 
         self.root.wait_window(popup)
         self.display()
@@ -379,12 +422,12 @@ class GUI:
 
     def _display_error_message(self):
         current_row = 0
-        self._label(self.valid_scrollable_frame, widget_params={'text': '错误', 'foreground': 'red'}, grid_params={'column': 0, 'row': current_row})
+        self._label(self.valid_scrollable_frame, widget_params={'text': '❌错误', 'foreground': 'red'}, grid_params={'column': 0, 'row': current_row, 'pady': 0})
         current_row += 1
         for e in self.schema.error:
             self._label(self.valid_scrollable_frame, widget_params={'text': e, 'foreground': 'red', 'style': 'Error.TLabel'}, grid_params={'column': 0, 'row': current_row})
             current_row += 1
-        self._label(self.valid_scrollable_frame, widget_params={'text': '警告', 'foreground': 'orange'}, grid_params={'column': 0, 'row': current_row})
+        self._label(self.valid_scrollable_frame, widget_params={'text': '⚠警告', 'foreground': 'orange'}, grid_params={'column': 0, 'row': current_row, 'pady': 0})
         current_row += 1
         for w in self.schema.warning:
             self._label(self.valid_scrollable_frame, widget_params={'text': w, 'foreground': 'orange', 'style': 'Warning.TLabel'}, grid_params={'column': 0, 'row': current_row})
@@ -393,20 +436,19 @@ class GUI:
 
     def _display_validation_generation(self):
         current_row = 0
-        self._button(self.tools_container, widget_params={'text': '存储', 'style': 'purple.TButton', 'command': self._store}, grid_params={'column': 0, 'row': current_row})
-        self._button(self.tools_container, widget_params={'text': '读取', 'style': 'pink.TButton', 'command': self._read}, grid_params={'column': 1, 'row': current_row})
-        self._button(self.tools_container, widget_params={'text': '校验', 'style': 'yellow.TButton', 'command': self._validate}, grid_params={'column': 2, 'row': current_row})
-        self._button(self.tools_container, widget_params={'text': '生成', 'style': 'teal.TButton', 'command': self._generate}, grid_params={'column': 3, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '💾存储', 'style': 'purple.TButton', 'command': self._store}, grid_params={'column': 0, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '🕮读取', 'style': 'pink.TButton', 'command': self._read}, grid_params={'column': 1, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '🛠校验', 'style': 'yellow.TButton', 'command': self._validate}, grid_params={'column': 2, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '🏭生成', 'style': 'teal.TButton', 'command': self._generate}, grid_params={'column': 3, 'row': current_row})
 
-        self.path_entry = ttk.Entry(self.tools_container, width=50)
-        self.path_entry.grid(column=4,row=current_row, sticky='w', padx=10)
+        self.path_entry = self._entry(self.tools_container, widget_params={'width': 50, 'state': 'readonly'}, grid_params={'column': 4, 'row': current_row})
         def select_directory():
             """打开目录选择对话框，并将选择的路径更新到 Entry 组件中"""
             directory = filedialog.askdirectory()  # 弹出目录选择对话框
             if directory:  # 如果用户选择了目录
                 self.path_entry.delete(0, END)  # 清空当前内容
                 self.path_entry.insert(0, directory)  # 插入新路径
-        self._button(self.tools_container, widget_params={'text': '选择目标文件夹', 'command': select_directory}, grid_params={'column': 5, 'row': current_row})
+        self._button(self.tools_container, widget_params={'text': '📂选择目标文件夹', 'command': select_directory}, grid_params={'column': 5, 'row': current_row})
         self._label(self.tools_container, widget_params={'text': '上次成功生成时间：{time}'.format(time=self.schema.last_gen_time), 'foreground': 'green'}, grid_params={'column': 6, 'row': current_row})
 
     def display(self):
@@ -422,38 +464,67 @@ class GUI:
         self._display_paper()
         self._display_error_message()
 
+    # def _create_scrollable_frame(self, **params):
+    #     container = ttk.Frame(self.paned_window)
+    #     self.paned_window.add(container, **params)
+    #     # self.container.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+    #     container.pack(fill="both", expand=True)
+    #     canvas = Canvas(container)
+    #     # canvas.configure(height=10)
+
+    #     scrollbar = Scrollbar(container, orient="vertical", command=canvas.yview)
+    #     scrollable_frame = ttk.Frame(canvas)
+
+    #     # 将滚动条与Canvas关联
+    #     scrollable_frame.bind(
+    #         "<Configure>",
+    #         lambda e: canvas.configure(
+    #             scrollregion=canvas.bbox("all")
+    #         )
+    #     )
+
+    #     # 将Frame放入Canvas中
+    #     canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    #     canvas.configure(yscrollcommand=scrollbar.set)
+
+    #     # 布局Canvas和滚动条
+    #     # scrollable_frame.pack(fill="both", expand=True)
+    #     canvas.pack(side="left", fill="both", expand=True)
+    #     scrollbar.pack(side="right", fill="y")
+    #     return container, canvas, scrollable_frame, scrollbar
+
     def _create_scrollable_frame(self, **params):
         container = ttk.Frame(self.paned_window)
         self.paned_window.add(container, **params)
-        # self.container.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
-        canvas = Canvas(container)
-        canvas.configure(height=80)
-
+        # 确保父容器可扩展
+        # container.pack(fill="both", expand=True)  # ✅ 关键修复
+        
+        canvas = Canvas(container, bg="#FFFFFF", height=200)  # ✅ 移除 height=10
         scrollbar = Scrollbar(container, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
 
-        # 将滚动条与Canvas关联
+        # 绑定滚动区域更新事件
         scrollable_frame.bind(
             "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
+        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-e.delta/60), "units"))
 
-        # 将Frame放入Canvas中
+        # 将 Frame 放入 Canvas（不要额外调用 pack!）
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        # 布局Canvas和滚动条
-        scrollable_frame.pack(fill="both", expand=True)
+        # 正确布局组件
         canvas.pack(side="left", fill="both", expand=True)
+        # scrollable_frame.pack(fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
         return container, canvas, scrollable_frame, scrollbar
 
     def _create_tools(self):
         self.tools_container = ttk.Frame(self.paned_window)
-        self.tools_container.pack(side='left', fill='both', expand=True)
+        self.tools_container.pack(side='left', fill='both', expand=False)
         self.paned_window.add(self.tools_container, weight=0)
 
     def _set_config(self):

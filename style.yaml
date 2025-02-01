@@ -76,6 +76,10 @@ Custom:
         - "active"
         - "#D01919"
 
+  confirm.TButton:
+    <<: *tbutton
+    width: 10
+
   teal.TButton:
     <<: *tbutton
     background: "#00B5AD"
