@@ -18,7 +18,7 @@ QUANGUOTONGYIFAPIAO_JIANZHIZHANG = "税务局"
 FAPIAO_AMOUNT = r'[¥￥]\s*' + FLOAT_2P
 FLIGHT_INFO_AMOUNT = r'[¥￥]\s*' + INT
 COMBINED_AMOUNT = r'CNY\s*' + FLOAT_2P
-XINGCHENGDAN_AMOUNT = r"合计：\s*" + FLOAT_2P + r"元"
+XINGCHENGDAN_AMOUNT = r"合计：?\s*" + FLOAT_2P + r"元"
 
 class Fapiao(PDFFile):
     has_title: bool = False
@@ -50,7 +50,7 @@ class Fapiao(PDFFile):
         if extra_item is None:
             self.extra_amount = 0
         else:
-            self.extra_amount = float(extra_item.group(1))
+            self.extra_amount = float(extra_item.group(1)) + float(extra_item.group(2))
 
         self.total_amount -= self.extra_amount
         self.is_loaded = True
@@ -104,7 +104,6 @@ class FlightInfo(IMGFile):
     total_amount: int = 0
 
     def load_info(self):
-        print("ok")
         if not hasattr(self, 'text') or self.text is None:
             return
 

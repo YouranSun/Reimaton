@@ -52,6 +52,7 @@ class Certificate:
             return attri, result
         return self.cert.info
 
+TRIP = r'{city1}\s*[^\s]?\s*{city2}'
 
 class Record:
 
@@ -129,7 +130,7 @@ class Record:
                     covered = False
                     for cert in self.certificates:
                         contestant_found = (re.search(contestant, cert.cert.text) is not None)
-                        trip_found = (re.search(city1 + r'.*' + city2, cert.cert.text) is not None)
+                        trip_found = (re.search(TRIP.format(city1=city1, city2=city2), cert.cert.text) is not None)
                         if contestant_found and trip_found:
                             covered = True
                     if not covered:
@@ -276,7 +277,6 @@ class Schema:
             block = pd.DataFrame.from_dict(result, orient='index').T
             cell_to_merge.append((len(data), len(data) + len(block)))
             blocks.append(block)
-            data = pd.concat([data, block])
 
         for i, record in enumerate(self.records['hostel']):
             sum_amount += record.fapiao.total_amount

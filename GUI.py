@@ -287,6 +287,7 @@ class GUI:
         
         if file_path:
             all_data = Record.read_from_json(file_path)
+            self.schema.__init__()
             
             for contestant in all_data['contestants']:
                 self.schema.add_contestant(contestant)
@@ -346,7 +347,7 @@ class GUI:
         for i, t in enumerate(attri):
             self._label(self.schema_scrollable_frame,
                         widget_params={'text': icon[t] + str(result[t]), 'style': styles[t]},
-                        grid_params={'column': i+2, 'row': self.current_row})
+                        grid_params={'column': i+2, 'row': self.current_row, 'sticky': ''})
         self.current_row += 1
 
         if record_type == 'traffic' or record_type == 'paper':  
@@ -358,8 +359,8 @@ class GUI:
                             widget_params={'text': Record.trip_to_str(t)},
                             grid_params={'column': 2, 'row': self.current_row})
                 self._button(self.schema_scrollable_frame,
-                             widget_params={'text': '删除行程', 'command': lambda r=record, t=t: self._del_trip(r, t)}, 
-                             grid_params={'column': 3, 'row': self.current_row})
+                             widget_params={'text': '删除行程', 'style': 'del.TButton', 'command': lambda r=record, t=t: self._del_trip(r, t)}, 
+                             grid_params={'column': 5, 'row': self.current_row})
                 self.current_row += 1
             self.current_row += 1
 
@@ -376,14 +377,12 @@ class GUI:
                             grid_params={'column': 1, 'row': self.current_row})
                 for i, t in enumerate(record.certificates):
                     attri, result = t.info
-                    print(attri)
-                    print(result)
                     for j, s in enumerate(attri):
                         self._label(self.schema_scrollable_frame,
                                     widget_params={'text': icon[s] + str(result[s]), 'style': styles[s]},
-                                    grid_params={'column': 2+j, 'row': self.current_row})
+                                    grid_params={'column': 2+j, 'row': self.current_row, 'sticky': ''})
                     self._button(self.schema_scrollable_frame,
-                                 widget_params={'text': '删除行程单', 'command': lambda r=record, t=t: self._del_cert(r, t)},
+                                 widget_params={'text': '删除行程单', 'style': 'del.TButton', 'command': lambda r=record, t=t: self._del_cert(r, t)},
                                  grid_params={'column': 2+len(attri), 'row': self.current_row})
                     self.current_row += 1
                 self.current_row += 1   
@@ -441,7 +440,7 @@ class GUI:
         self._button(self.tools_container, widget_params={'text': '🛠校验', 'style': 'yellow.TButton', 'command': self._validate}, grid_params={'column': 2, 'row': current_row})
         self._button(self.tools_container, widget_params={'text': '🏭生成', 'style': 'teal.TButton', 'command': self._generate}, grid_params={'column': 3, 'row': current_row})
 
-        self.path_entry = self._entry(self.tools_container, widget_params={'width': 50, 'state': 'readonly'}, grid_params={'column': 4, 'row': current_row})
+        self.path_entry = self._entry(self.tools_container, widget_params={'width': 50}, grid_params={'column': 4, 'row': current_row})
         def select_directory():
             """打开目录选择对话框，并将选择的路径更新到 Entry 组件中"""
             directory = filedialog.askdirectory()  # 弹出目录选择对话框
@@ -547,6 +546,8 @@ class GUI:
         self.root.tk.call('tk', 'scaling', ScaleFactor/75)
         
         self.root.title("Reimaton")
+        self.root.iconbitmap("logo.ico")
+        self.root.wm_iconbitmap("logo.ico")
         self.root.geometry('{0}x{1}'.format(self.root.winfo_screenwidth()-100, self.root.winfo_screenheight()-100))
         self.root.state('zoomed')
         
